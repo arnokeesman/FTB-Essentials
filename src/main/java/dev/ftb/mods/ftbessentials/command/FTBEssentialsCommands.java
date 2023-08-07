@@ -14,5 +14,6 @@ public class FTBEssentialsCommands {
 		TPACommands.register(dispatcher);
 		CheatCommands.register(dispatcher);
 		MiscCommands.register(dispatcher);
+		WorkbenchCommands.register(dispatcher);
 	}
 }

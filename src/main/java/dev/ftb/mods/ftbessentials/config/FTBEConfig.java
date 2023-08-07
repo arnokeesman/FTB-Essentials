@@ -81,4 +81,10 @@ public interface FTBEConfig {
 			.comment("Allows users to view player leaderboard stats.");
 	ToggleableConfig SLEEP = new ToggleableConfig(MISC, "sleep")
 			.comment("Enables the /sleep command that allows you to sleep without a bed.");
+
+	SNBTConfig WORKBENCH = CONFIG.getGroup("workbench").comment("workbench related commands");
+	ToggleableConfig CRAFT = new ToggleableConfig(WORKBENCH, "craft");
+	ToggleableConfig SMITHING = new ToggleableConfig(WORKBENCH, "smithing");
+	ToggleableConfig GRINDSTONE = new ToggleableConfig(WORKBENCH, "grindstone");
+	ToggleableConfig STONECUTTER = new ToggleableConfig(WORKBENCH, "stonecutter");
 }
