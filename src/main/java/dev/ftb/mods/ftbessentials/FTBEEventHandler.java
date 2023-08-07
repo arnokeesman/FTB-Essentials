@@ -17,6 +17,7 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.ServerChatEvent;
@@ -25,9 +26,12 @@ import net.minecraftforge.event.entity.EntityTeleportEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.SleepingLocationCheckEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.event.world.SleepFinishedTimeEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -262,5 +266,17 @@ public class FTBEEventHandler {
 		if (event.getEntity() instanceof ServerPlayer sp) {
 			WarmupCooldownTeleporter.cancelWarmup(sp);
 		}
+	}
+
+	@SubscribeEvent
+	public static void sleepCheck(SleepingLocationCheckEvent event) {
+		if (event.getEntity() instanceof Player player && player.getTags().contains("sleeping")) {
+			event.setResult(Event.Result.ALLOW);
+		}
+	}
+
+	@SubscribeEvent
+	public static void sleepEnd(SleepFinishedTimeEvent event) {
+		event.getWorld().players().forEach(player -> player.removeTag("sleeping"));
 	}
 }

@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.datafixers.util.Either;
 import dev.ftb.mods.ftbessentials.config.FTBEConfig;
 import dev.ftb.mods.ftbessentials.util.FTBEPlayerData;
 import dev.ftb.mods.ftbessentials.util.FTBEWorldData;
@@ -16,16 +17,25 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.ServerStatsCounter;
+import net.minecraft.stats.Stats;
+import net.minecraft.util.Unit;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.UsernameCache;
 import net.minecraftforge.common.util.FakePlayerFactory;
+import net.minecraftforge.event.ForgeEventFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +111,11 @@ public class MiscCommands {
 							.executes(context -> nickname(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "nickname")))
 					)
 			);
+		}
+
+		if (FTBEConfig.SLEEP.isEnabled()) {
+			dispatcher.register(Commands.literal("sleep")
+					.executes(context -> sleep(context.getSource().getPlayerOrException())));
 		}
 	}
 
@@ -282,5 +297,77 @@ public class MiscCommands {
 
 		data.sendTabName(player.server);
 		return 1;
+	}
+
+
+	// credits to henkelmax for this code
+	// https://github.com/henkelmax/sleeping-bags/blob/master/src/main/java/de/maxhenkel/sleepingbags/items/ItemSleepingBag.java#L36-L106
+	private static int sleep(ServerPlayer player) {
+		Level world = player.getLevel();
+
+		if (!BedBlock.canSetSpawn(world)) {
+			player.displayClientMessage(new TextComponent("You cannot sleep in this dimension"), true);
+			return 0;
+		}
+
+		if (!player.isOnGround()) {
+			player.displayClientMessage(new TextComponent("You cannot sleep in the air"), true);
+			return 0;
+		}
+
+		trySleep(player).ifLeft((sleepResult) -> {
+			if (sleepResult != null && sleepResult.getMessage() != null) {
+				player.displayClientMessage(sleepResult.getMessage(), true);
+			}
+		});
+
+		return 1;
+	}
+
+	private static Either<Player.BedSleepingProblem, Unit> trySleep(ServerPlayer player) {
+		Player.BedSleepingProblem ret = net.minecraftforge.event.ForgeEventFactory.onPlayerSleepInBed(player, Optional.empty());
+		if (ret != null) {
+			return Either.left(ret);
+		}
+
+		if (player.isSleeping() || !player.isAlive()) {
+			return Either.left(Player.BedSleepingProblem.OTHER_PROBLEM);
+		}
+
+		if (!player.getLevel().dimensionType().natural()) {
+			return Either.left(Player.BedSleepingProblem.NOT_POSSIBLE_HERE);
+		}
+		if (player.getLevel().isDay()) {
+			return Either.left(Player.BedSleepingProblem.NOT_POSSIBLE_NOW);
+		}
+
+		if (!ForgeEventFactory.fireSleepingTimeCheck(player, Optional.empty())) {
+			return Either.left(Player.BedSleepingProblem.NOT_POSSIBLE_NOW);
+		}
+
+		if (!player.isCreative()) {
+			Vec3 vector3d = player.position();
+			List<Monster> list = player.getLevel().getEntitiesOfClass(Monster.class, new AABB(vector3d.x() - 8D, vector3d.y() - 5D, vector3d.z() - 8D, vector3d.x() + 8D, vector3d.y() + 5D, vector3d.z() + 8D), (entity) -> entity.isPreventingPlayerRest(player));
+			if (!list.isEmpty()) {
+				return Either.left(Player.BedSleepingProblem.NOT_SAFE);
+			}
+		}
+
+		player.resetStat(Stats.CUSTOM.get(Stats.TIME_SINCE_REST));
+		if (player.isPassenger()) {
+			player.stopRiding();
+		}
+
+		player.setPose(Pose.SLEEPING);
+		player.setSleepingPos(player.blockPosition());
+		player.setDeltaMovement(Vec3.ZERO);
+		player.hasImpulse = true;
+		player.startSleeping(player.blockPosition());
+
+		player.addTag("sleeping");
+
+		player.getLevel().updateSleepingPlayerList();
+
+		return Either.right(Unit.INSTANCE);
 	}
 }
