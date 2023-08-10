@@ -2,15 +2,14 @@ package dev.ftb.mods.ftbessentials.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import dev.ftb.mods.ftbessentials.config.FTBEConfig;
+import dev.ftb.mods.ftbessentials.screen.CraftingMenuHelper;
+import dev.ftb.mods.ftbessentials.screen.GrindstoneMenuHelper;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.inventory.CraftingMenu;
-import net.minecraft.world.inventory.GrindstoneMenu;
-import net.minecraft.world.inventory.SmithingMenu;
-import net.minecraft.world.inventory.StonecutterMenu;
+import net.minecraft.world.inventory.*;
 
 public class WorkbenchCommands {
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -49,22 +48,30 @@ public class WorkbenchCommands {
 	}
 
 	private static int craft(ServerPlayer player) {
-		player.openMenu(new SimpleMenuProvider((i, inv, p) -> new CraftingMenu(i, inv), new TranslatableComponent("container.crafting")));
+		player.openMenu(new SimpleMenuProvider(
+				(i, inv, p) -> new CraftingMenuHelper(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				new TranslatableComponent("container.crafting")));
 		return 1;
 	}
 
 	private static int smithing(ServerPlayer player) {
-		player.openMenu(new SimpleMenuProvider((i, inv, p) -> new SmithingMenu(i, inv), new TranslatableComponent("container.upgrade")));
+		player.openMenu(new SimpleMenuProvider(
+				(i, inv, p) -> new SmithingMenu(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				new TranslatableComponent("container.upgrade")));
 		return 1;
 	}
 
 	private static int grind(ServerPlayer player) {
-		player.openMenu(new SimpleMenuProvider((i, inv, p) -> new GrindstoneMenu(i, inv), new TranslatableComponent("container.grindstone_title")));
+		player.openMenu(new SimpleMenuProvider(
+				(i, inv, p) -> new GrindstoneMenuHelper(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				new TranslatableComponent("container.grindstone_title")));
 		return 1;
 	}
 
 	private static int cutStone(ServerPlayer player) {
-		player.openMenu(new SimpleMenuProvider((i, inv, p) -> new StonecutterMenu(i, inv), new TranslatableComponent("container.stonecutter")));
+		player.openMenu(new SimpleMenuProvider(
+				(i, inv, p) -> new StonecutterMenu(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				new TranslatableComponent("container.stonecutter")));
 		return 1;
 	}
 }
