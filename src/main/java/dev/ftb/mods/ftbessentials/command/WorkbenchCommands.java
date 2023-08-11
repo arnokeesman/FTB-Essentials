@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import dev.ftb.mods.ftbessentials.config.FTBEConfig;
 import dev.ftb.mods.ftbessentials.screen.CraftingMenuHelper;
 import dev.ftb.mods.ftbessentials.screen.GrindstoneMenuHelper;
+import dev.ftb.mods.ftbessentials.screen.SmithingMenuHelper;
+import dev.ftb.mods.ftbessentials.screen.StonecutterMenuHelper;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.TranslatableComponent;
@@ -56,7 +58,7 @@ public class WorkbenchCommands {
 
 	private static int smithing(ServerPlayer player) {
 		player.openMenu(new SimpleMenuProvider(
-				(i, inv, p) -> new SmithingMenu(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				(i, inv, p) -> new SmithingMenuHelper(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
 				new TranslatableComponent("container.upgrade")));
 		return 1;
 	}
@@ -70,7 +72,7 @@ public class WorkbenchCommands {
 
 	private static int cutStone(ServerPlayer player) {
 		player.openMenu(new SimpleMenuProvider(
-				(i, inv, p) -> new StonecutterMenu(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
+				(i, inv, p) -> new StonecutterMenuHelper(i, inv, ContainerLevelAccess.create(player.level, player.blockPosition())),
 				new TranslatableComponent("container.stonecutter")));
 		return 1;
 	}
